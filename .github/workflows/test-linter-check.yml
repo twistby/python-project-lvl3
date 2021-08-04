@@ -1,0 +1,32 @@
+##########################################################################
+#                         pytest and WPS linter check                   #
+##########################################################################
+
+name: pytest and WPS linter
+
+on: [push, pull_request]
+
+jobs:
+  flake8-lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v2
+      - name: Set up Python environment
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.8"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          make install
+      - name:  WPS linter check 
+        run: make lint 
+      - name: test and publish code coverage
+        uses: paambaati/codeclimate-action@v2.7.5
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_TOKEN }}
+        with:
+          coverageCommand: make cover
