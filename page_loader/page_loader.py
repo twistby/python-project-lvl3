@@ -4,6 +4,8 @@ import os
 DEFAULT_SAVE_DIR = os.getcwd()
 
 
-def download():
+def download(page_adress: str, save_path: str = DEFAULT_SAVE_DIR) -> str:
     """Download page."""
-    return DEFAULT_SAVE_DIR
+    page_adress = save_path
+    save_path = page_adress[:-1]
+    return ''
