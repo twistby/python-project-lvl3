@@ -4,26 +4,14 @@ import tempfile
 
 import pytest
 
-from page_loader.page_loader import DEFAULT_SAVE_DIR, download, form_file_name
-
-
-def test_form_file_name():
-    """Test file name formation."""
-    link = ''
-    file_name = ''
-    assert form_file_name(link) == file_name
-    link = 'https://ru.hexlet.io/courses'
-    file_name = 'ru-hexlet-io-courses.html'
-    assert form_file_name(link) == file_name
-    link = 'http://hexlet.io/course'
-    file_name = 'hexlet-io-course.html'
-    assert form_file_name(link) == file_name
+from page_loader.page_loader import DEFAULT_SAVE_DIR, download
 
 
 def test_download():
-    """Download test."""
-    link = 'https://ru.hexlet.io/courses'
-    file_name = 'ru-hexlet-io-courses.html'
+    """Test download function."""
+    link = 'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm'  # noqa: E501
+    file_name = 'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm.html'  # noqa: E501
+    dir_name = DEFAULT_SAVE_DIR
 
     download(link)
     assert os.path.exists(os.path.join(DEFAULT_SAVE_DIR, file_name)) is True
@@ -32,10 +20,24 @@ def test_download():
         full_path = download(link, tmpdirname)
         assert os.path.join(tmpdirname, file_name) == full_path
         assert os.path.exists(os.path.join(tmpdirname, file_name)) is True
+        assert os.path.exists(os.path.join(tmpdirname, dir_name)) is True
+        assert os.path.isdir(os.path.join(tmpdirname, dir_name)) is True
 
 
 def test_download_to_wrong_dir():
-    """Download to wrong directory test."""
+    """Test download to wrong directory."""
     link = 'https://ru.hexlet.io/courses'
+    directory = '/vart/tmp/1'
     with pytest.raises(ValueError):
-        download(link, '/wrong_dir')
+        download(link, directory)
+
+
+def test_image_download():
+    """Tset downloading images of page."""
+    link = 'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm'  # noqa: E501
+    dir_name = 'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files'  # noqa: E501
+    img_name = 'help-websiteos-com-htmlpage.jpg'
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        download(link, tmpdirname)
+        assert os.path.exists(os.path.join(tmpdirname, dir_name)) is True
+        assert os.path.exists(os.path.join(tmpdirname, dir_name, img_name)) is True  # noqa: E501

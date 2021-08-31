@@ -17,6 +17,7 @@
  - codeclimate
  - flake8 + [wemake-python-styleguide](https://github.com/wemake-services/wemake-python-styleguide)
  - mypy
+ - Beautiful Soup
 
 
 ### Installation
