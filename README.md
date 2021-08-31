@@ -24,4 +24,4 @@
 ##### Here you can download the latest version of the "page-loader" package.
 
 ## Downloading the web page to the default directory.
-[![asciicast](https://asciinema.org/a/421836.svg)](https://asciinema.org/a/421836)
+[![asciicast](https://asciinema.org/a/433355.svg)](https://asciinema.org/a/433355)
