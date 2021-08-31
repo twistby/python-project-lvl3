@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "hexlet-code"
-version = "0.1.0"
-description = ""
+version = "0.1.4"
+description = "Page loader"
 authors = ["twistby <pref@outlook.com>"]
 packages = [
    { include = "page_loader" },
@@ -24,4 +24,4 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-page-loader = "page_loader.scripts.downloader:main"
+page-loader = "page_loader.scripts.page_loader:main"

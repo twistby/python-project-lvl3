@@ -7,7 +7,7 @@ def make_parser(default_folder: str):
     parser = argparse.ArgumentParser(description='Page loader')
     parser.add_argument(
         'page_address',
-        help='webpage address',
+        help='web-page address',
     )
     parser.add_argument(
         '-o',
