@@ -29,20 +29,20 @@ def form_file_name(
 
 
 def form_image_name(  # noqa: C901
-    page_host: Optional[str],
-    page_path: Optional[str],
+    image_host: Optional[str],
+    image_path: Optional[str],
 ) -> str:
     """Form file name from link."""
-    file_name = ''
-    if page_host and page_path:
-        first_part = re.sub('[^0-9a-zA-Z\s]+', '-', page_host)  # noqa: W605
-        if '/' not in page_path:
-            new_path = '/{p}'.format(p=page_path)
+    image_name = ''
+    if image_host and image_path:
+        first_part = re.sub('[^0-9a-zA-Z\s]+', '-', image_host)  # noqa: W605
+        if '/' not in image_path:
+            new_path = '/{p}'.format(p=image_path)
         else:
-            new_path = page_path
+            new_path = image_path
         second_part = re.sub('[^0-9a-zA-Z\s.]+', '-', new_path)  # noqa: W605
-        file_name = '{f}{s}'.format(f=first_part, s=second_part)
-    return file_name
+        image_name = '{f}{s}'.format(f=first_part, s=second_part)
+    return image_name
 
 
 def save_page(page_adress: str, save_directory: str, page_name: str) -> str:
@@ -84,21 +84,42 @@ def get_image_link(parsed_page: ParseResult, path: str) -> str:
 
 
 def save_images(
-    page_adress: str,
+    page: str,
     parsed_page: ParseResult,
     save_directory: str,
-    save_dir: str,
-) -> None:
+    resource_dir: str,
+) -> dict:
     """Save page images."""
-    page = urlopen(page_adress)  # noqa: S310
-    soup = BeautifulSoup(page, 'html.parser')
+    replacements = {}
+    with open(page) as local_page:
+        soup = BeautifulSoup(local_page, 'html.parser')
     images = soup.findAll(name='img')
     image_pathes = {image['src'] for image in images}
     for path in image_pathes:
-        link = get_image_link(parsed_page, path)
-        image_name = form_image_name(parsed_page.hostname, path)
-        full_path = os.path.join(save_directory, save_dir, image_name)
-        urlretrieve(link, full_path)  # noqa: S310
+        if urlparse(path).scheme == '':
+            link = get_image_link(parsed_page, path)
+            image_name = form_image_name(parsed_page.hostname, path)
+            urlretrieve(  # noqa: S310
+                link,
+                os.path.join(save_directory, resource_dir, image_name),
+            )
+            replacements[path] = image_name
+    return replacements
+
+
+def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
+    """Replace links to images in page."""
+    with open(page) as local_page:
+        soup = BeautifulSoup(local_page, 'html.parser')
+    images = soup.findAll(name='img')
+    for image in images:
+        if replace_data.get(image['src']) is not None:
+            image['src'] = os.path.join(
+                resource_dir,
+                str(replace_data.get(image['src'])),
+            )
+    with open(page, 'w') as new_page:
+        new_page.write(soup.prettify())
 
 
 def download(page_adress: str, save_directory: str = DEFAULT_SAVE_DIR) -> str:
@@ -113,13 +134,14 @@ def download(page_adress: str, save_directory: str = DEFAULT_SAVE_DIR) -> str:
     page_host = parsed_page.hostname
     page_path = parsed_page.path
     page_name = form_file_name(page_host, page_path, HTML_EXT)
-    full_path = save_page(page_adress, save_directory, page_name)
-    dir_name = form_file_name(page_host, page_path, DIR_EXT)
-    make_resourse_dir(save_directory, dir_name)
-    save_images(
-        page_adress,
+    local_page_path = save_page(page_adress, save_directory, page_name)
+    resource_dir = form_file_name(page_host, page_path, DIR_EXT)
+    make_resourse_dir(save_directory, resource_dir)
+    images = save_images(
+        local_page_path,
         parsed_page,
         save_directory,
-        dir_name,
+        resource_dir,
     )
-    return full_path
+    replace_links(local_page_path, resource_dir, images)
+    return local_page_path
