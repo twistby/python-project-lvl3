@@ -7,7 +7,7 @@
    Example of a simple HTML page
   </title>
   <meta content="Adobe RoboHelp - www.adobe.com" name="generator"/>
-  <link href="default_ns.css" rel="stylesheet"/>
+  <link href="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-default-ns.css" rel="stylesheet"/>
   <script language="JavaScript" title="WebHelpSplitCss" type="text/javascript">
    <!--
 if (navigator.appName !="Netscape")
@@ -41,15 +41,15 @@ div.WebHelpPopupMenu { position:absolute; left:0px; top:0px; z-index:4; visibili
 p.WebHelpNavBar { text-align:left; }
 -->
   </style>
-  <script language="javascript1.2" src="whmsg.js" type="text/javascript">
+  <script language="javascript1.2" src="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-whmsg.js" type="text/javascript">
   </script>
-  <script language="javascript" src="whver.js" type="text/javascript">
+  <script language="javascript" src="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-whver.js" type="text/javascript">
   </script>
-  <script language="javascript1.2" src="whproxy.js" type="text/javascript">
+  <script language="javascript1.2" src="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-whproxy.js" type="text/javascript">
   </script>
-  <script language="javascript1.2" src="whutils.js" type="text/javascript">
+  <script language="javascript1.2" src="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-whutils.js" type="text/javascript">
   </script>
-  <script language="javascript1.2" src="whtopic.js" type="text/javascript">
+  <script language="javascript1.2" src="help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files/help-websiteos-com-whtopic.js" type="text/javascript">
   </script>
   <script language="javascript1.2" type="text/javascript">
    <!--
