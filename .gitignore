@@ -6,4 +6,3 @@ dist/
 .vscode/
 coverage.xml
 .coverage
-*.html

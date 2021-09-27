@@ -53,7 +53,7 @@ def test_download_to_default_dir(requests_mock, page_url, file_name):
     [
         (
             'http://visions-of-you.com/inspiredby/samneill/wp/',
-            'Sam Neill Web.html',
+            'Sam_Neill_Web.html',
         ),
     ],
 )
