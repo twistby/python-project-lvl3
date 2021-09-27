@@ -1,46 +1,11 @@
-"""Test module."""
+"""Test page download module."""
 import os
 import tempfile
 
 import pytest
+from bs4 import BeautifulSoup as bs  # noqa: N813
 
-from page_loader.page_loader import DEFAULT_SAVE_DIR, download
-
-
-def test_download():
-    """Test download function."""
-    link = 'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm'  # noqa: E501
-    file_name = 'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm.html'  # noqa: E501
-    dir_name = DEFAULT_SAVE_DIR
-
-    download(link)
-    assert os.path.exists(os.path.join(DEFAULT_SAVE_DIR, file_name)) is True
-
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        full_path = download(link, tmpdirname)
-        assert os.path.join(tmpdirname, file_name) == full_path
-        assert os.path.exists(os.path.join(tmpdirname, file_name)) is True
-        assert os.path.exists(os.path.join(tmpdirname, dir_name)) is True
-        assert os.path.isdir(os.path.join(tmpdirname, dir_name)) is True
-
-
-def test_download_to_wrong_dir():
-    """Test download to wrong directory."""
-    link = 'https://ru.hexlet.io/courses'
-    directory = '/vart/tmp/1'
-    with pytest.raises(ValueError):
-        download(link, directory)
-
-
-def test_image_download():
-    """Tset downloading images of page."""
-    link = 'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm'  # noqa: E501
-    dir_name = 'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm_files'  # noqa: E501
-    img_name = 'help-websiteos-com-htmlpage.jpg'
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        download(link, tmpdirname)
-        assert os.path.exists(os.path.join(tmpdirname, dir_name)) is True
-        assert os.path.exists(os.path.join(tmpdirname, dir_name, img_name)) is True  # noqa: E501
+from page_loader.page_loader import download
 
 
 def get_path(file_name: str) -> str:
@@ -56,13 +21,53 @@ def read(file_path: str) -> str:
     return f_result
 
 
-def test_replace_images():
-    """Test replased image source."""
-    true_file = get_path('replace_images.txt')
-    expected = read(true_file)
-    link = 'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm'  # noqa: E501
-    file_name = 'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm.html'  # noqa: E501
+def test_download_to_wrong_dir(requests_mock):
+    """Test download to wrong directory."""
+    link = 'https://ru.hexlet.io/courses'
+    directory = '/vart/tmp/1'
+    requests_mock.get(link, text='test')
+    with pytest.raises(ValueError):
+        download(link, directory)
+
+
+@pytest.mark.parametrize(
+    'page_url, file_name',
+    [
+        (
+            'http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm',  # noqa: E501
+            'help-websiteos-com-websiteos-example-of-a-simple-html-page-htm.html',  # noqa: E501
+        ),
+    ],
+)
+def test_download_to_default_dir(requests_mock, page_url, file_name):
+    """Test download to default directory."""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        download(link, tmpdirname)
-        result_file = read(os.path.join(tmpdirname, file_name))
-        assert expected == result_file
+        os.chdir(tmpdirname)
+        requests_mock.get(page_url, text='test')
+        download(page_url)
+        assert os.path.exists(os.path.join(tmpdirname, file_name)) is True
+
+
+@pytest.mark.parametrize(
+    'page_url, expected_file',
+    [
+        (
+            'http://visions-of-you.com/inspiredby/samneill/wp/',
+            'Sam Neill Web.html',
+        ),
+    ],
+)
+def test_download(requests_mock, page_url, expected_file):
+    """Test download function."""
+    requests_mock.get(page_url, text=read(get_path(expected_file)))
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        full_path = download(page_url, tmpdirname)
+        assert os.path.exists(full_path) is True
+        assert os.path.isfile(full_path) is True
+        assert bs(
+            read(full_path),
+            features='html.parser',
+        ).prettify() == bs(
+            read(get_path(expected_file)),
+            features='html.parser',
+        ).prettify()

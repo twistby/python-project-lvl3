@@ -1,11 +1,13 @@
 """Page-loader script."""
+import os
+
 from page_loader.cli import get_args
-from page_loader.page_loader import DEFAULT_SAVE_DIR, download
+from page_loader.page_loader import download
 
 
 def main():
     """Run main function."""
-    args = get_args(DEFAULT_SAVE_DIR)
+    args = get_args(os.getcwd())
     print(download(args.page_address, args.output))
 
 
