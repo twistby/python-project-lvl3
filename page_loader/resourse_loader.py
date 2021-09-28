@@ -1,4 +1,5 @@
 """Page resources loader module."""
+import logging
 import os
 import re
 from typing import Optional
@@ -17,15 +18,14 @@ TAGS_ATTR = {  # noqa: WPS407
     LINK_TAG: HREF_ATTR,
     SCRIPT_TAG: SRC_ATTR,
 }
-FILE_RE_PATTERN = '[^0-9a-zA-Z\s.]+'  # noqa: W605
-LINK_RE_PATTERN = '[^0-9a-zA-Z\s]+'  # noqa: W605
-HEADERS = {  # noqa: WPS407
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',  # noqa: E501
-}
+FILE_RE_PATTERN = '[^0-9a-zA-Z.]+'  # noqa: W605
+LINK_RE_PATTERN = '[^0-9a-zA-Z]+'  # noqa: W605
 
 
 def get_resource_link(parsed_page: ParseResult, path: str) -> str:
     """Get image link."""
+    if path[0] == '.':
+        path = path[1:]
     if '/' in path:
         link = '{s}://{h}{p}'.format(
             s=parsed_page.scheme,
@@ -51,13 +51,19 @@ def form_resource_name(  # noqa: C901
     """Form file name from link."""
     resource_name = ''
     if res_host and res_path:
-        first_part = re.sub(LINK_RE_PATTERN, '-', res_host)  # noqa: W605
+        host_part = re.sub(LINK_RE_PATTERN, '-', res_host)  # noqa: W605
         if '/' not in res_path:
             new_path = '/{p}'.format(p=res_path)
         else:
             new_path = res_path
-        second_part = re.sub(FILE_RE_PATTERN, '-', new_path)  # noqa: W605
-        resource_name = '{f}{s}'.format(f=first_part, s=second_part)
+        *path, file_name = new_path.split('/')
+        path_part = re.sub(LINK_RE_PATTERN, '-', ''.join(path))
+        file_part = re.sub(FILE_RE_PATTERN, '-', file_name)
+        resource_name = '{h}{pp}-{fp}'.format(
+            h=host_part,
+            pp=path_part,
+            fp=file_part,
+        )
     return resource_name
 
 
@@ -85,14 +91,24 @@ def change_tags(
     for tag in tags:
         if tag.has_attr(atribute):
             if replace_data.get(tag[atribute]) is not None:
-                tag[atribute] = os.path.join(
+                new_resource_path = os.path.join(
                     resource_dir,
                     str(replace_data.get(tag[atribute])),
+                )
+                tag[atribute] = new_resource_path
+                logging.info(
+                    'Tag "{t}", atribute "{a}". Replaced {o} to {n}'.format(
+                        o=tag[atribute],
+                        n=new_resource_path,
+                        t=tag,
+                        a=atribute,
+                    ),
                 )
 
 
 def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
     """Replace links to images in page."""
+    logging.info('Start replacing links in saved page.')
     with open(page) as local_page:
         soup = BeautifulSoup(local_page, 'html.parser')
     for tag_name, attr_name in TAGS_ATTR.items():
@@ -100,9 +116,10 @@ def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
         change_tags(resource_tags, attr_name, replace_data, resource_dir)
     with open(page, 'w') as new_page:
         new_page.write(soup.prettify())
+        logging.info('Resources links successfully replaced.')
 
 
-def download_resurces(  # noqa: C901, WPS210
+def download_resurces(  # noqa: C901, WPS210, WPS213
     local_page_path: str,
     page_adress: str,
     save_directory: str,
@@ -110,38 +127,56 @@ def download_resurces(  # noqa: C901, WPS210
     agent_header: dict,
 ) -> None:
     """Download web-page resources."""
+    logging.info('Start downloading resources.')
     parsed_page = urlparse(page_adress)
     replacements = {}
     resource_pathes = get_resource_pathes(local_page_path)
     for path in resource_pathes:
+        logging.info('Trying to download {r}'.format(r=path))
         parsed_path = urlparse(path)
+
+        if parsed_path.netloc and parsed_path.netloc != parsed_page.netloc:
+            continue
+
         if parsed_path.scheme == '':
             resource_name = form_resource_name(
                 parsed_path.path,
                 parsed_page.hostname,
             )
+            logging.info('Formed resource name: {n}'.format(n=resource_name))
             resource_link = get_resource_link(parsed_page, path)
+            logging.info('Full resourse link: {l}'.format(l=resource_link))
         elif parsed_path.hostname == parsed_page.hostname:
             resource_name = form_resource_name(
                 parsed_path.path,
                 parsed_path.hostname,
             )
+            logging.info('Formed resource name: {n}'.format(n=resource_name))
             resource_link = path
+            logging.info('Full resourse link: {l}'.format(l=resource_link))
         else:
+            logging.debug('Something wrong with resource: {r}'.format(r=path))
             continue
-        try:
-            response = requests.get(resource_link, headers=agent_header)
-        except ConnectionError:
-            print('Connection error')
-        except Exception:
-            print('Unknown error')
-        else:
-            with open(
-                os.path.join(save_directory, resource_dir, resource_name),
-                'wb',
-            ) as resource_file:
-                resource_file.write(response.content)
-                resource_file.close()
-            replacements[path] = resource_name
+        res_content = get_resource(resource_link, agent_header)
+        with open(
+            os.path.join(save_directory, resource_dir, resource_name),
+            'wb',
+        ) as resource_file:
+            resource_file.write(res_content)
+            logging.info('Succesffully save resource: {r}'.format(r=path))
+            resource_file.close()
+        replacements[path] = resource_name
     if replacements:
         replace_links(local_page_path, resource_dir, replacements)
+
+
+def get_resource(resource_adress: str, header: dict) -> str:
+    """Try to get resource content."""
+    response = requests.get(url=resource_adress, headers=header)
+    if response.ok:
+        return response.content
+    raise ConnectionError("Can't get resource {r}. {err}".format(
+        r=resource_adress,
+        err=response.status_code,
+    ),
+    )
