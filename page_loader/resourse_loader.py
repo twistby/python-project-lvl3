@@ -61,6 +61,8 @@ def form_resource_name(  # noqa: C901
         *path, file_name = new_path.split('/')
         path_part = re.sub(LINK_RE_PATTERN, '-', ' '.join(path))
         file_part = re.sub(FILE_RE_PATTERN, '-', file_name)
+        if '.' not in file_part:
+            file_part = '{f}.html'.format(f=file_part)
         resource_name = '{h}{pp}-{fp}'.format(
             h=host_part,
             pp=path_part,
