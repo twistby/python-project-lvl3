@@ -12,9 +12,11 @@ def main():
     args = get_args(os.getcwd())
     try:
         file_path = download(args.page_address, args.output)
-    except ValueError:
+    except ValueError as err:
+        print('Value error: {e}'.format(e=err))
         sys.exit(1)
-    except ConnectionError:
+    except ConnectionError as err:
+        print('Connection error: {e}'.format(e=err))
         sys.exit(1)
     except Exception as err:
         logging.error('Unknown error: {err}'.format(err=err))

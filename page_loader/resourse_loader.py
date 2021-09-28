@@ -7,6 +7,7 @@ from urllib.parse import ParseResult, urlparse
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
+from progress.bar import Bar
 
 IMAGE_TAG = 'img'
 LINK_TAG = 'link'
@@ -24,9 +25,10 @@ LINK_RE_PATTERN = '[^0-9a-zA-Z]+'  # noqa: W605
 
 def get_resource_link(parsed_page: ParseResult, path: str) -> str:
     """Get image link."""
-    if path[0] == '.':
-        path = path[1:]
-    if '/' in path:
+    if path[:2] == './':
+        path = path[2:]
+
+    if path[0] == '/':
         link = '{s}://{h}{p}'.format(
             s=parsed_page.scheme,
             h=parsed_page.hostname,
@@ -57,7 +59,7 @@ def form_resource_name(  # noqa: C901
         else:
             new_path = res_path
         *path, file_name = new_path.split('/')
-        path_part = re.sub(LINK_RE_PATTERN, '-', ''.join(path))
+        path_part = re.sub(LINK_RE_PATTERN, '-', ' '.join(path))
         file_part = re.sub(FILE_RE_PATTERN, '-', file_name)
         resource_name = '{h}{pp}-{fp}'.format(
             h=host_part,
@@ -120,11 +122,14 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
     parsed_page = urlparse(page_adress)
     replacements = {}
     resource_pathes = get_resource_pathes(local_page_path)
+    progress_bar = Bar('Downloading resources', max=len(resource_pathes))
     for path in resource_pathes:
         parsed_path = urlparse(path)
         if not path:
+            progress_bar.next()  # noqa: B305
             continue
         if parsed_path.netloc and parsed_path.netloc != parsed_page.netloc:
+            progress_bar.next()  # noqa: B305
             continue
 
         if parsed_path.scheme == '':
@@ -132,7 +137,7 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
                 parsed_path.path,
                 parsed_page.hostname,
             )
-            resource_link = get_resource_link(parsed_page, path)
+            resource_link = get_resource_link(parsed_page, parsed_path.path)
         elif parsed_path.hostname == parsed_page.hostname:
             resource_name = form_resource_name(
                 parsed_path.path,
@@ -141,15 +146,18 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
             resource_link = path
         else:
             logging.debug('Something wrong with resource: {r}'.format(r=path))
+            progress_bar.next()  # noqa: B305
             continue
         res_content = get_resource(resource_link, agent_header)
-        with open(
-            os.path.join(save_directory, resource_dir, resource_name),
-            'wb',
-        ) as resource_file:
-            resource_file.write(res_content)
-            resource_file.close()
-        replacements[path] = resource_name
+        if res_content:
+            with open(
+                os.path.join(save_directory, resource_dir, resource_name),
+                'wb',
+            ) as resource_file:
+                resource_file.write(res_content)
+                resource_file.close()
+            replacements[path] = resource_name
+        progress_bar.next()  # noqa: B305
     if replacements:
         replace_links(local_page_path, resource_dir, replacements)
 
@@ -159,8 +167,11 @@ def get_resource(resource_adress: str, header: dict) -> bytes:
     response = requests.get(url=resource_adress, headers=header)
     if response.ok:
         return response.content
-    raise ConnectionError("Can't get resource {r}. {err}".format(
-        r=resource_adress,
-        err=response.status_code,
-    ),
+    logging.debug(
+        'Something wrong with resource: {r}. Code: {c}. Reason: {s}'.format(
+            r=resource_adress,
+            c=response.status_code,
+            s=response.reason,
+        ),
     )
+    return None

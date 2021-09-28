@@ -59,7 +59,7 @@ def save_page(
     return full_path
 
 
-def get_page_text(page_adress: str) -> str:
+def get_page_text(page_adress: str) -> str:  # noqa: WPS238
     """Try get page text."""
     try:
         response = requests.get(url=page_adress, headers=DEFAULT_HEADER)
@@ -78,8 +78,10 @@ def get_page_text(page_adress: str) -> str:
         err_msg = 'There was an error. {em}'.format(em=err)
         logging.error(err_msg)
         raise ConnectionError(err_msg)
-    response.encoding = 'utf-8'
-    return response.text
+    if response.ok:
+        response.encoding = 'utf-8'
+        return response.text
+    raise ConnectionError(response.reason)
 
 
 def download(page_adress: str, save_directory: str = '') -> str:
