@@ -15,23 +15,6 @@ HTML_EXT = '.html'
 DIR_EXT = '_files'
 
 
-class WrongURLError(Exception):
-    """Worng url exeption."""
-
-    def __init__(self, *args):
-        """Init class."""
-        if args:
-            self.message = args[0]
-        else:
-            self.message = None
-
-    def __str__(self):
-        """Return error."""
-        if self.message:
-            return 'WrongURLError, {0} '.format(self.message)
-        return 'WrongURLError has been raised'
-
-
 def form_file_name(
     page_adress: str,
     extension: str = '',
@@ -45,8 +28,6 @@ def form_file_name(
             n=re.sub(LINK_RE_PATTERN, '-', link),  # noqa: W605
             e=extension,
         )
-    else:
-        raise WrongURLError("Can't find host name in url!")
     return file_name
 
 
@@ -55,9 +36,8 @@ def save_page(
     save_directory: str,
 ) -> str:
     """Save web page."""
-    logging.info('Start downloading page: {pa}'.format(pa=page_adress))
     if not os.path.exists(save_directory) or not os.path.isdir(save_directory):
-        err_msg = 'Directory {wd} not exist or is not a directory!'.format(
+        err_msg = "Directory {wd} not exist or it's not a directory!".format(
             wd=save_directory,
         )
         logging.error(err_msg)
@@ -69,18 +49,12 @@ def save_page(
         logging.error(err_msg)
         raise ValueError(err_msg)
 
-    if not urlparse(page_adress).scheme:
-        logging.warning('Loks like URL without scheme, "http://" added')
-        page_adress = 'http://{pa}'.format(pa=page_adress)
-
     page_name = form_file_name(page_adress, HTML_EXT)
-    logging.info('Formed page name: {pn}'.format(pn=page_name))
 
     page_text = get_page_text(page_adress)
     full_path = os.path.join(save_directory, page_name)
     with open(full_path, 'w') as page_file:
         page_file.write(page_text)
-        logging.info('Page successfully saved.')
         page_file.close()
     return full_path
 
@@ -104,6 +78,7 @@ def get_page_text(page_adress: str) -> str:
         err_msg = 'There was an error. {em}'.format(em=err)
         logging.error(err_msg)
         raise ConnectionError(err_msg)
+    response.encoding = 'utf-8'
     return response.text
 
 
@@ -111,13 +86,15 @@ def download(page_adress: str, save_directory: str = '') -> str:
     """Download page."""
     if not save_directory:
         save_directory = os.getcwd()
+    if not urlparse(page_adress).scheme:
+        logging.warning('Looks like URL without scheme, "http://" added')
+        page_adress = 'http://{pa}'.format(pa=page_adress)
 
     local_page_path = save_page(page_adress, save_directory)
 
     resource_dir = form_file_name(page_adress, DIR_EXT)
     full_dir_name = os.path.join(save_directory, resource_dir)
     if not os.path.exists(full_dir_name):
-        logging.info('Creating resource directory: {d}'.format(d=resource_dir))
         os.makedirs(full_dir_name)
 
     download_resurces(

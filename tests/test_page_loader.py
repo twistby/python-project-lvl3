@@ -3,6 +3,7 @@ import os
 import tempfile
 
 import pytest
+import requests
 from bs4 import BeautifulSoup as bs  # noqa: N813
 from requests_mock import ANY as RM_ANY
 
@@ -103,3 +104,16 @@ def test_download_resources(
         saved_files = os.listdir(resources_dir_path)
         excepted_files_list = read(get_path(expected_files)).split()
         assert sorted(saved_files) == sorted(excepted_files_list)
+
+
+def test_download_exeptions(requests_mock):
+    """Test exeptions while downloading."""
+    page_url = 'https://ru.hexlet.io/courses'
+    requests_mock.get(page_url, exc=requests.exceptions.ConnectionError)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        with pytest.raises(ConnectionError):
+            download(page_url, tmpdirname)
+
+        requests_mock.get(page_url, exc=requests.exceptions.HTTPError)
+        with pytest.raises(ConnectionError):
+            download(page_url, tmpdirname)

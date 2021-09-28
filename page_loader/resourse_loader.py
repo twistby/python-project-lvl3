@@ -96,19 +96,10 @@ def change_tags(
                     str(replace_data.get(tag[atribute])),
                 )
                 tag[atribute] = new_resource_path
-                logging.info(
-                    'Tag "{t}", atribute "{a}". Replaced {o} to {n}'.format(
-                        o=tag[atribute],
-                        n=new_resource_path,
-                        t=tag,
-                        a=atribute,
-                    ),
-                )
 
 
 def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
     """Replace links to images in page."""
-    logging.info('Start replacing links in saved page.')
     with open(page) as local_page:
         soup = BeautifulSoup(local_page, 'html.parser')
     for tag_name, attr_name in TAGS_ATTR.items():
@@ -116,7 +107,6 @@ def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
         change_tags(resource_tags, attr_name, replace_data, resource_dir)
     with open(page, 'w') as new_page:
         new_page.write(soup.prettify())
-        logging.info('Resources links successfully replaced.')
 
 
 def download_resurces(  # noqa: C901, WPS210, WPS213
@@ -127,14 +117,13 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
     agent_header: dict,
 ) -> None:
     """Download web-page resources."""
-    logging.info('Start downloading resources.')
     parsed_page = urlparse(page_adress)
     replacements = {}
     resource_pathes = get_resource_pathes(local_page_path)
     for path in resource_pathes:
-        logging.info('Trying to download {r}'.format(r=path))
         parsed_path = urlparse(path)
-
+        if not path:
+            continue
         if parsed_path.netloc and parsed_path.netloc != parsed_page.netloc:
             continue
 
@@ -143,17 +132,13 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
                 parsed_path.path,
                 parsed_page.hostname,
             )
-            logging.info('Formed resource name: {n}'.format(n=resource_name))
             resource_link = get_resource_link(parsed_page, path)
-            logging.info('Full resourse link: {l}'.format(l=resource_link))
         elif parsed_path.hostname == parsed_page.hostname:
             resource_name = form_resource_name(
                 parsed_path.path,
                 parsed_path.hostname,
             )
-            logging.info('Formed resource name: {n}'.format(n=resource_name))
             resource_link = path
-            logging.info('Full resourse link: {l}'.format(l=resource_link))
         else:
             logging.debug('Something wrong with resource: {r}'.format(r=path))
             continue
@@ -163,7 +148,6 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
             'wb',
         ) as resource_file:
             resource_file.write(res_content)
-            logging.info('Succesffully save resource: {r}'.format(r=path))
             resource_file.close()
         replacements[path] = resource_name
     if replacements:
