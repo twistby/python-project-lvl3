@@ -26,3 +26,15 @@
 
 ## Downloading the web page to the default directory.
 [![asciicast](https://asciinema.org/a/433355.svg)](https://asciinema.org/a/433355)
+
+## Downloading the web page and images.
+[![asciicast](https://asciinema.org/a/WhRaoX8ABFgLwjKfXnGXfeaJs.svg)](https://asciinema.org/a/WhRaoX8ABFgLwjKfXnGXfeaJs)
+
+## Downloading web page and all local resources.
+[![asciicast](https://asciinema.org/a/MjwE4gKeLAeHz741aAHj0HAUn.svg)](https://asciinema.org/a/MjwE4gKeLAeHz741aAHj0HAUn)
+
+## Error handling.
+[![asciicast](https://asciinema.org/a/UdIHBbryGiOxMOAcBzfoieejO.svg)](https://asciinema.org/a/UdIHBbryGiOxMOAcBzfoieejO)
+
+## Resources downloading progress bar.
+[![asciicast](https://asciinema.org/a/L6gsYzKcddHiT3ATiL9lcjtcY.svg)](https://asciinema.org/a/L6gsYzKcddHiT3ATiL9lcjtcY)
