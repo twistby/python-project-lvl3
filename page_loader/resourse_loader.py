@@ -170,7 +170,7 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
         replace_links(local_page_path, resource_dir, replacements)
 
 
-def get_resource(resource_adress: str, header: dict) -> str:
+def get_resource(resource_adress: str, header: dict) -> bytes:
     """Try to get resource content."""
     response = requests.get(url=resource_adress, headers=header)
     if response.ok:

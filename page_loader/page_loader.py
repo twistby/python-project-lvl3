@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlparse
 
 import requests
-from fake_useragent import UserAgent
+from fake_useragent import UserAgent  # type: ignore
 
 from page_loader.resourse_loader import LINK_RE_PATTERN, download_resurces
 
