@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hexlet-code"
-version = "0.1.26"
+version = "0.1.27"
 description = "Page loader"
 authors = ["twistby <pref@outlook.com>"]
 packages = [
