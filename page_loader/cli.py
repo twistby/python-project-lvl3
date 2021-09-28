@@ -4,7 +4,10 @@ import argparse
 
 def make_parser(default_folder: str):
     """Make argparse parser."""
-    parser = argparse.ArgumentParser(description='Page loader')
+    parser = argparse.ArgumentParser(
+        description='Use this utility to download web page localy.',
+        usage='page-loader -o tmp_dir http://template.com',
+    )
     parser.add_argument(
         'page_address',
         help='web-page address',

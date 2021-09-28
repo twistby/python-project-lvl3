@@ -7,7 +7,7 @@ from urllib.parse import ParseResult, urlparse
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
-from progress.bar import Bar
+from progress.bar import Bar  # type: ignore
 
 IMAGE_TAG = 'img'
 LINK_TAG = 'link'
@@ -174,4 +174,4 @@ def get_resource(resource_adress: str, header: dict) -> bytes:
             s=response.reason,
         ),
     )
-    return None
+    return b''

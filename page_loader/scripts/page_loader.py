@@ -21,7 +21,7 @@ def main():
     except Exception as err:
         logging.error('Unknown error: {err}'.format(err=err))
         sys.exit(1)
-    print(file_path)
+    print('\n{p}'.format(p=file_path))
     sys.exit(0)
 
 
