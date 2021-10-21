@@ -15,12 +15,28 @@ HTML_EXT = '.html'
 DIR_EXT = '_files'
 
 
+class AppInternalError(Exception):
+    """Internal error class."""
+
+
+class CreateDirError(AppInternalError):
+    """Internal error class: create directory."""
+
+
+class SavePageError(AppInternalError):
+    """Internal error class: save file."""
+
+
+class AppConnectionError(AppInternalError):
+    """Internal error class: connection error."""
+
+
 def form_file_name(
-    page_adress: str,
+    page_address: str,
     extension: str = '',
 ) -> str:
     """Form file name from link."""
-    parsed_page = urlparse(page_adress)
+    parsed_page = urlparse(page_address)
     file_name = ''
     if parsed_page.hostname:
         link = '{h}{p}'.format(h=parsed_page.hostname, p=parsed_page.path)
@@ -32,78 +48,76 @@ def form_file_name(
 
 
 def save_page(
-    page_adress: str,
+    page_address: str,
+    page_text: str,
     save_directory: str,
 ) -> str:
     """Save web page."""
-    if not os.path.exists(save_directory) or not os.path.isdir(save_directory):
-        err_msg = "Directory {wd} not exist or it's not a directory!".format(
-            wd=save_directory,
-        )
-        logging.error(err_msg)
-        raise ValueError(err_msg)
-    elif not os.access(save_directory, os.W_OK):
-        err_msg = 'No rights to save in {wd}'.format(
-            wd=save_directory,
-        )
-        logging.error(err_msg)
-        raise ValueError(err_msg)
+    page_name = form_file_name(page_address, HTML_EXT)
 
-    page_name = form_file_name(page_adress, HTML_EXT)
-
-    page_text = get_page_text(page_adress)
     full_path = os.path.join(save_directory, page_name)
     with open(full_path, 'w') as page_file:
-        page_file.write(page_text)
-        page_file.close()
+        try:
+            page_file.write(page_text)
+        except OSError as err:
+            logging.debug(err)
+            err_msg = "Can't save page. {em}".format(em=err)
+            logging.error(err_msg)
+            raise SavePageError(err_msg) from err
+
     return full_path
 
 
-def get_page_text(page_adress: str) -> str:  # noqa: WPS238
+def get_page_text(page_address: str) -> str:  # noqa: WPS238
     """Try get page text."""
-    try:
-        response = requests.get(url=page_adress, headers=DEFAULT_HEADER)
+    try:  # noqa: WPS229
+        response = requests.get(url=page_address, headers=DEFAULT_HEADER)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        logging.debug(err)
+        err_msg = 'HTTP error. {em}'.format(em=err)
+        logging.error(err_msg)
+        raise AppConnectionError(err_msg) from err
     except requests.exceptions.ConnectionError as err:
         logging.debug(err)
         err_msg = 'Network problem. {em}'.format(em=err)
         logging.error(err_msg)
-        raise ConnectionError(err_msg)
-    except requests.exceptions.HTTPError as err:
-        logging.debug(err)
-        err_msg = 'Invalid HTTP response. {em}'.format(em=err)
-        logging.error(err_msg)
-        raise ConnectionError(err_msg)
-    except Exception as err:
+        raise AppConnectionError(err_msg) from err
+    except requests.exceptions.RequestException as err:
         logging.debug(err)
         err_msg = 'There was an error. {em}'.format(em=err)
         logging.error(err_msg)
-        raise ConnectionError(err_msg)
-    if response.ok:
-        response.encoding = 'utf-8'
-        return response.text
-    raise ConnectionError(response.reason)
+        raise AppConnectionError(err_msg) from err
+
+    return response.text
 
 
-def download(page_adress: str, save_directory: str = '') -> str:
+def download(page_address: str, saving_directory: str = '') -> str:
     """Download page."""
-    if not save_directory:
-        save_directory = os.getcwd()
-    if not urlparse(page_adress).scheme:
+    if not saving_directory:
+        saving_directory = os.getcwd()
+    if not urlparse(page_address).scheme:
         logging.warning('Looks like URL without scheme, "http://" added')
-        page_adress = 'http://{pa}'.format(pa=page_adress)
+        page_address = 'http://{pa}'.format(pa=page_address)
 
-    local_page_path = save_page(page_adress, save_directory)
+    page_text = get_page_text(page_address)
 
-    resource_dir = form_file_name(page_adress, DIR_EXT)
-    full_dir_name = os.path.join(save_directory, resource_dir)
+    resource_dir = form_file_name(page_address, DIR_EXT)
+    full_dir_name = os.path.join(saving_directory, resource_dir)
     if not os.path.exists(full_dir_name):
-        os.makedirs(full_dir_name)
+        try:
+            os.makedirs(full_dir_name)
+        except OSError as err:
+            logging.debug(err)
+            err_msg = "Can't create directory. {em}".format(em=err)
+            logging.error(err_msg)
+            raise CreateDirError(err_msg) from err
 
-    download_resurces(
-        local_page_path,
-        page_adress,
-        save_directory,
+    page_text = download_resurces(
+        page_text,
+        page_address,
+        saving_directory,
         resource_dir,
-        DEFAULT_HEADER,
     )
-    return local_page_path
+
+    return save_page(page_address, page_text, saving_directory)

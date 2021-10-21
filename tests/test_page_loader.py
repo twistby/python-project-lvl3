@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup as bs  # noqa: N813
 from requests_mock import ANY as RM_ANY
 
-from page_loader.page_loader import download
+from page_loader.page_loader import AppInternalError, download
 
 
 def get_path(file_name: str) -> str:
@@ -28,7 +28,7 @@ def test_download_to_wrong_dir(requests_mock):
     link = 'https://ru.hexlet.io/courses'
     directory = '/vart/tmp/1'
     requests_mock.get(link, text='test')
-    with pytest.raises(ValueError):
+    with pytest.raises(AppInternalError):
         download(link, directory)
 
 
@@ -111,9 +111,9 @@ def test_download_exeptions(requests_mock):
     page_url = 'https://ru.hexlet.io/courses'
     requests_mock.get(page_url, exc=requests.exceptions.ConnectionError)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        with pytest.raises(ConnectionError):
+        with pytest.raises(AppInternalError):
             download(page_url, tmpdirname)
 
         requests_mock.get(page_url, exc=requests.exceptions.HTTPError)
-        with pytest.raises(ConnectionError):
+        with pytest.raises(AppInternalError):
             download(page_url, tmpdirname)

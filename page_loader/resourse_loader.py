@@ -3,12 +3,15 @@ import logging
 import os
 import re
 from typing import Optional
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import ParseResult, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
+from fake_useragent import UserAgent  # type: ignore
 from progress.bar import Bar  # type: ignore
 
+ua = UserAgent()
+DEFAULT_HEADER = {'User-Agent': ua.random}  # noqa: WPS407
 IMAGE_TAG = 'img'
 LINK_TAG = 'link'
 SCRIPT_TAG = 'script'
@@ -19,8 +22,8 @@ TAGS_ATTR = {  # noqa: WPS407
     LINK_TAG: HREF_ATTR,
     SCRIPT_TAG: SRC_ATTR,
 }
-FILE_RE_PATTERN = '[^0-9a-zA-Z.]+'  # noqa: W605
 LINK_RE_PATTERN = '[^0-9a-zA-Z]+'  # noqa: W605
+FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'  # noqa: W605
 
 
 def get_resource_link(parsed_page: ParseResult, path: str) -> str:
@@ -58,31 +61,40 @@ def form_resource_name(  # noqa: C901
             new_path = '/{p}'.format(p=res_path)
         else:
             new_path = res_path
-        *path, file_name = new_path.split('/')
-        path_part = re.sub(LINK_RE_PATTERN, '-', ' '.join(path))
-        file_part = re.sub(FILE_RE_PATTERN, '-', file_name)
-        if '.' not in file_part:
-            file_part = '{f}.html'.format(f=file_part)
-        resource_name = '{h}{pp}-{fp}'.format(
+
+        file_extention_obj = re.search(
+            FILE_EXT_RE_PATTERN,
+            new_path,
+            flags=re.IGNORECASE,
+        )
+        if file_extention_obj is None:
+            file_extention = '.html'
+        else:
+            file_extention = file_extention_obj.group(0)
+
+        new_path = new_path.replace(file_extention, '')
+
+        path_part = re.sub(LINK_RE_PATTERN, '-', new_path)
+        if file_extention is None:
+            file_extention = '.html'
+        resource_name = '{h}{pp}{fe}'.format(
             h=host_part,
             pp=path_part,
-            fp=file_part,
+            fe=file_extention,
         )
     return resource_name
 
 
-def get_resource_pathes(page):
-    """Collect pathes of resources."""
-    with open(page) as local_page:
-        soup = BeautifulSoup(local_page, 'html.parser')
-    resource_pathes = {tag[SRC_ATTR] for tag in soup.findAll(name=IMAGE_TAG)}
-    link_pathes = {tag[HREF_ATTR] for tag in soup.findAll(name=LINK_TAG)}
-    script_pathes = set()
+def get_resource_paths(soup: BeautifulSoup) -> set:
+    """Collect paths of resources."""
+    resource_paths = {tag[SRC_ATTR] for tag in soup.findAll(name=IMAGE_TAG)}
+    link_paths = {tag[HREF_ATTR] for tag in soup.findAll(name=LINK_TAG)}
+    script_paths = set()
     script_tags = soup.findAll(name=SCRIPT_TAG)
     for tag in script_tags:
         if tag.has_attr(SRC_ATTR):
-            script_pathes.add(tag[SRC_ATTR])
-    return resource_pathes.union(link_pathes.union(script_pathes))
+            script_paths.add(tag[SRC_ATTR])
+    return resource_paths.union(link_paths.union(script_paths))
 
 
 def change_tags(
@@ -102,78 +114,73 @@ def change_tags(
                 tag[atribute] = new_resource_path
 
 
-def replace_links(page: str, resource_dir: str, replace_data: dict) -> None:
-    """Replace links to images in page."""
-    with open(page) as local_page:
-        soup = BeautifulSoup(local_page, 'html.parser')
+def replace_links(
+    soup: BeautifulSoup,
+    resource_dir: str,
+    replace_data: dict,
+) -> str:
+    """Replace links to resources in page text."""
     for tag_name, attr_name in TAGS_ATTR.items():
         resource_tags = soup.findAll(name=tag_name)
         change_tags(resource_tags, attr_name, replace_data, resource_dir)
-    with open(page, 'w') as new_page:
-        new_page.write(soup.prettify())
+    return soup.prettify()
 
 
 def download_resurces(  # noqa: C901, WPS210, WPS213
-    local_page_path: str,
-    page_adress: str,
+    page_text: str,
+    page_address: str,
     save_directory: str,
     resource_dir: str,
-    agent_header: dict,
-) -> None:
+) -> str:
     """Download web-page resources."""
-    parsed_page = urlparse(page_adress)
+    parsed_page = urlparse(page_address)
     replacements = {}
-    resource_pathes = get_resource_pathes(local_page_path)
-    progress_bar = Bar('Downloading resources', max=len(resource_pathes))
-    for path in resource_pathes:
-        parsed_path = urlparse(path)
-        if not path:
-            progress_bar.next()  # noqa: B305
-            continue
-        if parsed_path.netloc and parsed_path.netloc != parsed_page.netloc:
-            progress_bar.next()  # noqa: B305
+    soup = BeautifulSoup(page_text, 'html.parser')
+    resource_paths = get_resource_paths(soup)
+    progress_bar = Bar('Downloading resources', max=len(resource_paths))
+    for path in resource_paths:
+
+        resource_link = urljoin(page_address, path)
+
+        try:  # noqa: WPS229
+            response = requests.get(
+                url=resource_link,
+                headers=DEFAULT_HEADER,
+                stream=True,
+            )
+            response.raise_for_status()
+        except Exception as err:
+            logging.debug(
+                'Something wrong with resource: {r}. {err}'.format(
+                    r=resource_link,
+                    err=err,
+                ),
+            )
             continue
 
-        if parsed_path.scheme == '':
-            resource_name = form_resource_name(
-                parsed_path.path,
-                parsed_page.hostname,
-            )
-            resource_link = get_resource_link(parsed_page, parsed_path.path)
-        elif parsed_path.hostname == parsed_page.hostname:
-            resource_name = form_resource_name(
-                parsed_path.path,
-                parsed_path.hostname,
-            )
-            resource_link = path
-        else:
-            logging.debug('Something wrong with resource: {r}'.format(r=path))
-            progress_bar.next()  # noqa: B305
-            continue
-        res_content = get_resource(resource_link, agent_header)
-        if res_content:
-            with open(
-                os.path.join(save_directory, resource_dir, resource_name),
-                'wb',
-            ) as resource_file:
-                resource_file.write(res_content)
-                resource_file.close()
+        parsed_path = urlparse(path)
+        resource_name = form_resource_name(
+            parsed_path.path,
+            parsed_page.hostname,
+        )
+
+        with open(
+            os.path.join(save_directory, resource_dir, resource_name),
+            'wb',
+        ) as resource_file:
+            for chunk in response.iter_content(chunk_size=1024):
+                try:
+                    resource_file.write(chunk)
+                except OSError as err:  # noqa: WPS440
+                    logging.debug(err)
+                    err_msg = "Can't save resource {rm}. {em}".format(
+                        rm=resource_name,
+                        em=err,
+                    )
+                    logging.error(err_msg)
+
             replacements[path] = resource_name
         progress_bar.next()  # noqa: B305
     if replacements:
-        replace_links(local_page_path, resource_dir, replacements)
-
-
-def get_resource(resource_adress: str, header: dict) -> bytes:
-    """Try to get resource content."""
-    response = requests.get(url=resource_adress, headers=header)
-    if response.ok:
-        return response.content
-    logging.debug(
-        'Something wrong with resource: {r}. Code: {c}. Reason: {s}'.format(
-            r=resource_adress,
-            c=response.status_code,
-            s=response.reason,
-        ),
-    )
-    return b''
+        page_text = replace_links(soup, resource_dir, replacements)
+    return page_text

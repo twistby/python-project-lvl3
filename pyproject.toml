@@ -10,7 +10,6 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.26.0"
-requests-mock = "^1.9.3"
 beautifulsoup4 = "^4.9.3"
 fake-useragent = "^0.1.11"
 progress = "^1.6"
@@ -22,6 +21,7 @@ pytest = "^6.2.2"
 mypy = "^0.902"
 pytest-cov = "^2.12.1"
 types-requests = "^2.25.9"
+requests-mock = "^1.9.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
