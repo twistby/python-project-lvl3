@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup as bs  # noqa: N813
 from requests_mock import ANY as RM_ANY
 
-from page_loader.page_loader import AppInternalError, download
+from page_loader.page_loader import download
 
 
 def get_path(file_name: str) -> str:

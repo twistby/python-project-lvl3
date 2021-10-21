@@ -56,14 +56,16 @@ def save_page(
     page_name = form_file_name(page_address, HTML_EXT)
 
     full_path = os.path.join(save_directory, page_name)
-    with open(full_path, 'w') as page_file:
-        try:
+    try:
+        page_file = open(full_path, 'w')  # noqa: WPS515
+    except OSError as err:
+        logging.debug(err)
+        err_msg = "Can't save page. {em}".format(em=err)
+        logging.error(err_msg)
+        raise SavePageError(err_msg) from err
+    else:
+        with page_file:
             page_file.write(page_text)
-        except OSError as err:
-            logging.debug(err)
-            err_msg = "Can't save page. {em}".format(em=err)
-            logging.error(err_msg)
-            raise SavePageError(err_msg) from err
 
     return full_path
 
@@ -107,7 +109,7 @@ def download(page_address: str, saving_directory: str = '') -> str:
     if not os.path.exists(full_dir_name):
         try:
             os.makedirs(full_dir_name)
-        except Exception as err:
+        except OSError as err:
             logging.debug(err)
             err_msg = "Can't create directory. {em}".format(em=err)
             logging.error(err_msg)
