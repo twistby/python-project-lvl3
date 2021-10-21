@@ -107,7 +107,7 @@ def download(page_address: str, saving_directory: str = '') -> str:
     if not os.path.exists(full_dir_name):
         try:
             os.makedirs(full_dir_name)
-        except OSError as err:
+        except Exception as err:
             logging.debug(err)
             err_msg = "Can't create directory. {em}".format(em=err)
             logging.error(err_msg)

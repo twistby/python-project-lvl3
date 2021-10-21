@@ -28,7 +28,7 @@ def test_download_to_wrong_dir(requests_mock):
     link = 'https://ru.hexlet.io/courses'
     directory = '/vart/tmp/1'
     requests_mock.get(link, text='test')
-    with pytest.raises(AppInternalError):
+    with pytest.raises(Exception):
         download(link, directory)
 
 
@@ -111,9 +111,9 @@ def test_download_exeptions(requests_mock):
     page_url = 'https://ru.hexlet.io/courses'
     requests_mock.get(page_url, exc=requests.exceptions.ConnectionError)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        with pytest.raises(AppInternalError):
+        with pytest.raises(Exception):
             download(page_url, tmpdirname)
 
         requests_mock.get(page_url, exc=requests.exceptions.HTTPError)
-        with pytest.raises(AppInternalError):
+        with pytest.raises(Exception):
             download(page_url, tmpdirname)
