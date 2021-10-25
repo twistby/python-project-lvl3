@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from typing import Optional
-from urllib.parse import ParseResult, urljoin, urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
@@ -24,29 +24,6 @@ TAGS_ATTR = {  # noqa: WPS407
 }
 LINK_RE_PATTERN = '[^0-9a-zA-Z]+'  # noqa: W605
 FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'  # noqa: W605
-
-
-def get_resource_link(parsed_page: ParseResult, path: str) -> str:
-    """Get image link."""
-    if path[:2] == './':
-        path = path[2:]
-
-    if path[0] == '/':
-        link = '{s}://{h}{p}'.format(
-            s=parsed_page.scheme,
-            h=parsed_page.hostname,
-            p=path,
-        )
-    else:
-        splitted_path = parsed_page.path.split('/')
-        new_path = '/'.join(splitted_path[:-1])
-        link = '{s}://{h}{pth}/{p}'.format(
-            s=parsed_page.scheme,
-            h=parsed_page.hostname,
-            pth=new_path,
-            p=path,
-        )
-    return link
 
 
 def form_resource_name(  # noqa: C901
@@ -139,10 +116,15 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
     resource_paths = get_resource_paths(soup)
     progress_bar = Bar('Downloading resources', max=len(resource_paths))
     for path in resource_paths:
+        parsed_path = urlparse(path)
+
+        if parsed_path.netloc and parsed_path.netloc != parsed_page.netloc:
+            progress_bar.next()
+            continue
 
         resource_link = urljoin(page_address, path)
 
-        try:  # noqa: WPS229
+        try:
             response = requests.get(
                 url=resource_link,
                 headers=DEFAULT_HEADER,
@@ -158,7 +140,6 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
             )
             continue
 
-        parsed_path = urlparse(path)
         resource_name = form_resource_name(
             parsed_path.path,
             parsed_page.hostname,
@@ -180,7 +161,7 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
                     logging.error(err_msg)
 
             replacements[path] = resource_name
-        progress_bar.next()  # noqa: B305
+        progress_bar.next()
     if replacements:
         page_code = replace_links(soup, resource_dir, replacements)
     return page_code

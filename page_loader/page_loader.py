@@ -76,7 +76,7 @@ def save_page(
 
 def get_page_code(page_address: str) -> str:  # noqa: WPS238
     """Try get page text."""
-    try:  # noqa: WPS229
+    try:
         response = requests.get(url=page_address, headers=DEFAULT_HEADER)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
