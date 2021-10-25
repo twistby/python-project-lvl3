@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import requests
 from fake_useragent import UserAgent  # type: ignore
 
-from page_loader.resourse_loader import LINK_RE_PATTERN, download_resurces
+from page_loader.resource_loader import LINK_RE_PATTERN, download_resurces
 
 ua = UserAgent()
 DEFAULT_HEADER = {'User-Agent': ua.random}  # noqa: WPS407
@@ -25,6 +25,10 @@ class CreateDirError(AppInternalError):
 
 class SavePageError(AppInternalError):
     """Internal error class: save file."""
+
+
+class DirNotExistError(AppInternalError):
+    """Internal error class: saving directory not exist."""
 
 
 class AppConnectionError(AppInternalError):
@@ -49,7 +53,7 @@ def form_file_name(
 
 def save_page(
     page_address: str,
-    page_text: str,
+    page_code: str,
     save_directory: str,
 ) -> str:
     """Save web page."""
@@ -65,12 +69,12 @@ def save_page(
         raise SavePageError(err_msg) from err
     else:
         with page_file:
-            page_file.write(page_text)
+            page_file.write(page_code)
 
     return full_path
 
 
-def get_page_text(page_address: str) -> str:  # noqa: WPS238
+def get_page_code(page_address: str) -> str:  # noqa: WPS238
     """Try get page text."""
     try:  # noqa: WPS229
         response = requests.get(url=page_address, headers=DEFAULT_HEADER)
@@ -94,15 +98,26 @@ def get_page_text(page_address: str) -> str:  # noqa: WPS238
     return response.text
 
 
-def download(page_address: str, saving_directory: str = '') -> str:
-    """Download page."""
+def set_saving_dir(saving_directory: str) -> str:
+    """Check saving directory and set default if necessary."""
     if not saving_directory:
         saving_directory = os.getcwd()
+    if not os.path.exists(saving_directory):
+        err_msg = 'Saving directory not exist: {d}'.format(d=saving_directory)
+        logging.error(err_msg)
+        raise DirNotExistError(err_msg)
+    return saving_directory
+
+
+def download(page_address: str, saving_directory: str = '') -> str:
+    """Download page."""
+    saving_directory = set_saving_dir(saving_directory)
+
     if not urlparse(page_address).scheme:
         logging.warning('Looks like URL without scheme, "http://" added')
         page_address = 'http://{pa}'.format(pa=page_address)
 
-    page_text = get_page_text(page_address)
+    page_code = get_page_code(page_address)
 
     resource_dir = form_file_name(page_address, DIR_EXT)
     full_dir_name = os.path.join(saving_directory, resource_dir)
@@ -115,11 +130,11 @@ def download(page_address: str, saving_directory: str = '') -> str:
             logging.error(err_msg)
             raise CreateDirError(err_msg) from err
 
-    page_text = download_resurces(
-        page_text,
+    page_code = download_resurces(
+        page_code,
         page_address,
         saving_directory,
         resource_dir,
     )
 
-    return save_page(page_address, page_text, saving_directory)
+    return save_page(page_address, page_code, saving_directory)

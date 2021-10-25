@@ -127,7 +127,7 @@ def replace_links(
 
 
 def download_resurces(  # noqa: C901, WPS210, WPS213
-    page_text: str,
+    page_code: str,
     page_address: str,
     save_directory: str,
     resource_dir: str,
@@ -135,7 +135,7 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
     """Download web-page resources."""
     parsed_page = urlparse(page_address)
     replacements = {}
-    soup = BeautifulSoup(page_text, 'html.parser')
+    soup = BeautifulSoup(page_code, 'html.parser')
     resource_paths = get_resource_paths(soup)
     progress_bar = Bar('Downloading resources', max=len(resource_paths))
     for path in resource_paths:
@@ -182,5 +182,5 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
             replacements[path] = resource_name
         progress_bar.next()  # noqa: B305
     if replacements:
-        page_text = replace_links(soup, resource_dir, replacements)
-    return page_text
+        page_code = replace_links(soup, resource_dir, replacements)
+    return page_code
