@@ -11,29 +11,29 @@ from fake_useragent import UserAgent  # type: ignore
 from progress.bar import Bar  # type: ignore
 
 ua = UserAgent()
-DEFAULT_HEADER = {'User-Agent': ua.random}  # noqa: WPS407
+DEFAULT_HEADER = {'User-Agent': ua.random}
 IMAGE_TAG = 'img'
 LINK_TAG = 'link'
 SCRIPT_TAG = 'script'
 SRC_ATTR = 'src'
 HREF_ATTR = 'href'
-TAGS_ATTR = {  # noqa: WPS407
+TAGS_ATTR = {
     IMAGE_TAG: SRC_ATTR,
     LINK_TAG: HREF_ATTR,
     SCRIPT_TAG: SRC_ATTR,
 }
-LINK_RE_PATTERN = '[^0-9a-zA-Z]+'  # noqa: W605
-FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'  # noqa: W605
+LINK_RE_PATTERN = '[^0-9a-zA-Z]+'
+FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'
 
 
-def form_resource_name(  # noqa: C901
+def form_resource_name(
     res_path: Optional[str],
     res_host: Optional[str] = '',
 ) -> str:
     """Form file name from link."""
     resource_name = ''
     if res_host and res_path:
-        host_part = re.sub(LINK_RE_PATTERN, '-', res_host)  # noqa: W605
+        host_part = re.sub(LINK_RE_PATTERN, '-', res_host)
         if '/' not in res_path:
             new_path = '/{p}'.format(p=res_path)
         else:
@@ -103,7 +103,7 @@ def replace_links(
     return soup.prettify()
 
 
-def download_resurces(  # noqa: C901, WPS210, WPS213
+def download_resurces(
     page_code: str,
     page_address: str,
     save_directory: str,
@@ -152,7 +152,7 @@ def download_resurces(  # noqa: C901, WPS210, WPS213
             for chunk in response.iter_content(chunk_size=1024):
                 try:
                     resource_file.write(chunk)
-                except OSError as err:  # noqa: WPS440
+                except OSError as err:
                     logging.debug(err)
                     err_msg = "Can't save resource {rm}. {em}".format(
                         rm=resource_name,

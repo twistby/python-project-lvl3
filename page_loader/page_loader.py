@@ -10,7 +10,7 @@ from fake_useragent import UserAgent  # type: ignore
 from page_loader.resource_loader import LINK_RE_PATTERN, download_resurces
 
 ua = UserAgent()
-DEFAULT_HEADER = {'User-Agent': ua.random}  # noqa: WPS407
+DEFAULT_HEADER = {'User-Agent': ua.random}
 HTML_EXT = '.html'
 DIR_EXT = '_files'
 
@@ -45,7 +45,7 @@ def form_file_name(
     if parsed_page.hostname:
         link = '{h}{p}'.format(h=parsed_page.hostname, p=parsed_page.path)
         file_name = '{n}{e}'.format(
-            n=re.sub(LINK_RE_PATTERN, '-', link),  # noqa: W605
+            n=re.sub(LINK_RE_PATTERN, '-', link),
             e=extension,
         )
     return file_name
@@ -61,7 +61,7 @@ def save_page(
 
     full_path = os.path.join(save_directory, page_name)
     try:
-        page_file = open(full_path, 'w')  # noqa: WPS515
+        page_file = open(full_path, 'w')
     except OSError as err:
         logging.debug(err)
         err_msg = "Can't save page. {em}".format(em=err)
@@ -74,7 +74,7 @@ def save_page(
     return full_path
 
 
-def get_page_code(page_address: str) -> str:  # noqa: WPS238
+def get_page_code(page_address: str) -> str:
     """Try get page text."""
     try:
         response = requests.get(url=page_address, headers=DEFAULT_HEADER)
