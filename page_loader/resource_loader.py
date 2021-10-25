@@ -23,7 +23,7 @@ TAGS_ATTR = {
     SCRIPT_TAG: SRC_ATTR,
 }
 LINK_RE_PATTERN = '[^0-9a-zA-Z]+'
-FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'
+FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'  # noqa: W605
 
 
 def form_resource_name(
