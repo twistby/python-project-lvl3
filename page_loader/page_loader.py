@@ -113,6 +113,9 @@ def download(page_url: str, saving_directory: str = '') -> str:
     if not saving_directory:
         saving_directory = os.getcwd()
 
+    page_url = check_url_schema(page_url)
+    page_html = get_page_html(page_url)
+
     page_file, page_path = open_page_file(saving_directory, page_url)
 
     resource_dir_name = form_file_name(page_url, DIR_SUFFIX)
@@ -128,9 +131,6 @@ def download(page_url: str, saving_directory: str = '') -> str:
         err_msg = "Can't create directory. {em}".format(em=err)
         logging.error(err_msg)
         raise app_errors.CreateDirError(err_msg) from err
-
-    page_url = check_url_schema(page_url)
-    page_html = get_page_html(page_url)
 
     page_html = download_resurces(
         page_html,
