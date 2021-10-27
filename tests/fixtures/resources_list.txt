@@ -1,8 +1,8 @@
-help-websiteos-com-Example-of-a-simple-HTML-page-files-whmsg.js
-help-websiteos-com-Example-of-a-simple-HTML-page-files-count.js
-help-websiteos-com-Example-of-a-simple-HTML-page-files-default-ns.css
-help-websiteos-com-Example-of-a-simple-HTML-page-files-whver.js
-help-websiteos-com-Example-of-a-simple-HTML-page-files-htmlpage.jpg
-help-websiteos-com-Example-of-a-simple-HTML-page-files-whutils.js
-help-websiteos-com-Example-of-a-simple-HTML-page-files-whproxy.js
-help-websiteos-com-Example-of-a-simple-HTML-page-files-whtopic.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-whmsg.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-count.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-default-ns.css
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-whver.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-htmlpage.jpg
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-whutils.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-whproxy.js
+help-websiteos-com-websiteos-Example-of-a-simple-HTML-page-files-whtopic.js

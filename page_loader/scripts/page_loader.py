@@ -3,8 +3,9 @@ import logging
 import os
 import sys
 
+from page_loader.app_errors import AppInternalError
 from page_loader.cli import get_args
-from page_loader.page_loader import AppInternalError, download
+from page_loader.page_loader import download
 
 
 def main():

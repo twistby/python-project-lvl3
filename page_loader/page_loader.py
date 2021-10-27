@@ -2,45 +2,27 @@
 import logging
 import os
 import re
+from typing import TextIO, Tuple
 from urllib.parse import urlparse
 
 import requests
 from fake_useragent import UserAgent  # type: ignore
 
+from page_loader import app_errors
 from page_loader.resource_loader import LINK_RE_PATTERN, download_resurces
 
 ua = UserAgent()
 DEFAULT_HEADER = {'User-Agent': ua.random}
 HTML_EXT = '.html'
-DIR_EXT = '_files'
-
-
-class AppInternalError(Exception):
-    """Internal error class."""
-
-
-class CreateDirError(AppInternalError):
-    """Internal error class: create directory."""
-
-
-class SavePageError(AppInternalError):
-    """Internal error class: save file."""
-
-
-class DirNotExistError(AppInternalError):
-    """Internal error class: saving directory not exist."""
-
-
-class AppConnectionError(AppInternalError):
-    """Internal error class: connection error."""
+DIR_SUFFIX = '_files'
 
 
 def form_file_name(
-    page_address: str,
+    page_url: str,
     extension: str = '',
 ) -> str:
     """Form file name from link."""
-    parsed_page = urlparse(page_address)
+    parsed_page = urlparse(page_url)
     file_name = ''
     if parsed_page.hostname:
         link = '{h}{p}'.format(h=parsed_page.hostname, p=parsed_page.path)
@@ -52,12 +34,12 @@ def form_file_name(
 
 
 def save_page(
-    page_address: str,
+    page_url: str,
     page_code: str,
     save_directory: str,
 ) -> str:
     """Save web page."""
-    page_name = form_file_name(page_address, HTML_EXT)
+    page_name = form_file_name(page_url, HTML_EXT)
 
     full_path = os.path.join(save_directory, page_name)
     try:
@@ -66,7 +48,7 @@ def save_page(
         logging.debug(err)
         err_msg = "Can't save page. {em}".format(em=err)
         logging.error(err_msg)
-        raise SavePageError(err_msg) from err
+        raise app_errors.SavePageError(err_msg) from err
     else:
         with page_file:
             page_file.write(page_code)
@@ -74,26 +56,16 @@ def save_page(
     return full_path
 
 
-def get_page_code(page_address: str) -> str:
+def get_page_html(page_url: str) -> str:
     """Try get page text."""
     try:
-        response = requests.get(url=page_address, headers=DEFAULT_HEADER)
+        response = requests.get(url=page_url, headers=DEFAULT_HEADER)
         response.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        logging.debug(err)
-        err_msg = 'HTTP error. {em}'.format(em=err)
-        logging.error(err_msg)
-        raise AppConnectionError(err_msg) from err
-    except requests.exceptions.ConnectionError as err:
-        logging.debug(err)
-        err_msg = 'Network problem. {em}'.format(em=err)
-        logging.error(err_msg)
-        raise AppConnectionError(err_msg) from err
     except requests.exceptions.RequestException as err:
         logging.debug(err)
         err_msg = 'There was an error. {em}'.format(em=err)
         logging.error(err_msg)
-        raise AppConnectionError(err_msg) from err
+        raise app_errors.AppConnectionError(err_msg) from err
 
     return response.text
 
@@ -105,24 +77,48 @@ def set_saving_dir(saving_directory: str) -> str:
     if not os.path.exists(saving_directory):
         err_msg = 'Saving directory not exist: {d}'.format(d=saving_directory)
         logging.error(err_msg)
-        raise DirNotExistError(err_msg)
+        raise app_errors.DirNotExistError(err_msg)
     return saving_directory
 
 
-def download(page_address: str, saving_directory: str = '') -> str:
-    """Download page."""
-    saving_directory = set_saving_dir(saving_directory)
-
-    if not urlparse(page_address).scheme:
+def check_url_schema(page_url: str) -> str:
+    """Add schema if need."""
+    if not urlparse(page_url).scheme:
         logging.warning('Looks like URL without scheme, "http://" added')
-        page_address = 'http://{pa}'.format(pa=page_address)
+        page_url = 'http://{pa}'.format(pa=page_url)
+    return page_url
 
-    page_code = get_page_code(page_address)
 
-    resource_dir = form_file_name(page_address, DIR_EXT)
-    full_dir_name = os.path.join(saving_directory, resource_dir)
+def open_page_file(
+    saving_directory: str,
+    page_url: str,
+) -> Tuple[TextIO, str]:
+    """Open file to save page."""
+    page_path = os.path.join(
+        saving_directory,
+        form_file_name(page_url, HTML_EXT),
+    )
     try:
-        os.mkdir(full_dir_name)
+        page_file = open(page_path, 'w')
+    except OSError as err:
+        logging.debug(err)
+        err_msg = "Can't save page. {em}".format(em=err)
+        logging.error(err_msg)
+        raise app_errors.SavePageError(err_msg) from err
+    return page_file, page_path
+
+
+def download(page_url: str, saving_directory: str = '') -> str:
+    """Download page."""
+    if not saving_directory:
+        saving_directory = os.getcwd()
+
+    page_file, page_path = open_page_file(saving_directory, page_url)
+
+    resource_dir_name = form_file_name(page_url, DIR_SUFFIX)
+    resource_dir_path = os.path.join(saving_directory, resource_dir_name)
+    try:
+        os.mkdir(resource_dir_path)
     except FileExistsError as err:
         logging.debug(err)
         err_msg = 'Directory exist. {em}'.format(em=err)
@@ -131,13 +127,25 @@ def download(page_address: str, saving_directory: str = '') -> str:
         logging.debug(err)
         err_msg = "Can't create directory. {em}".format(em=err)
         logging.error(err_msg)
-        raise CreateDirError(err_msg) from err
+        raise app_errors.CreateDirError(err_msg) from err
 
-    page_code = download_resurces(
-        page_code,
-        page_address,
+    page_url = check_url_schema(page_url)
+    page_html = get_page_html(page_url)
+
+    page_html = download_resurces(
+        page_html,
+        page_url,
         saving_directory,
-        resource_dir,
+        resource_dir_name,
     )
 
-    return save_page(page_address, page_code, saving_directory)
+    with page_file:
+        try:
+            page_file.write(page_html)
+        except OSError as err:
+            logging.debug(err)
+            err_msg = "Can't save page. {em}".format(em=err)
+            logging.error(err_msg)
+            raise app_errors.SavePageError(err_msg) from err
+
+    return page_path
