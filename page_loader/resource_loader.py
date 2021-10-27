@@ -2,7 +2,7 @@
 import logging
 import os
 import re
-from typing import Optional
+from typing import Optional, Set
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -64,7 +64,7 @@ def form_resource_name(
 
 def get_resource_paths(soup: BeautifulSoup) -> set:
     """Collect paths of resources."""
-    resource_paths = set()
+    resource_paths: Set[str] = set()
     for tg, atr in TAGS_ATTR.items():
         resource_paths = resource_paths.union(
             {tag[atr] for tag in soup.findAll(name=tg) if tag.has_attr(atr)},
