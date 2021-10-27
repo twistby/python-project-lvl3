@@ -29,11 +29,8 @@ FILE_EXT_RE_PATTERN = '\.\w{0,}($|\?)'  # noqa: W605
 CHUNK_SIZE = 1024
 
 
-def form_resource_name(resource_link: str) -> str:
-    """Form file name from link."""
-    parsed_url = urlparse(resource_link)
-
-    full_path = '{a}{b}'.format(a=parsed_url.hostname, b=parsed_url.path)
+def get_extention(full_path: str) -> str:
+    """Get extention from url or default."""
     file_extention_obj = re.search(
         FILE_EXT_RE_PATTERN,
         full_path,
@@ -43,9 +40,18 @@ def form_resource_name(resource_link: str) -> str:
         file_extention = '.html'
     else:
         file_extention = file_extention_obj.group(0)
-        full_path = full_path.replace(file_extention, '')
-    full_path = re.sub(LINK_RE_PATTERN, '-', full_path)
-    return '{p}{e}'.format(p=full_path, e=file_extention)
+    return file_extention
+
+
+def form_resource_name(resource_link: str) -> str:
+    """Form file name from link."""
+    parsed_url = urlparse(resource_link)
+    link = '{a}{b}'.format(a=parsed_url.hostname, b=parsed_url.path)
+    file_extention = get_extention(link)
+    return '{p}{e}'.format(
+        p=re.sub(LINK_RE_PATTERN, '-', link.replace(file_extention, '')),
+        e=file_extention,
+    )
 
 
 def get_resource_urls(soup: BeautifulSoup) -> set:
