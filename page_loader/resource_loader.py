@@ -64,14 +64,12 @@ def form_resource_name(
 
 def get_resource_paths(soup: BeautifulSoup) -> set:
     """Collect paths of resources."""
-    resource_paths = {tag[SRC_ATTR] for tag in soup.findAll(name=IMAGE_TAG)}
-    link_paths = {tag[HREF_ATTR] for tag in soup.findAll(name=LINK_TAG)}
-    script_paths = set()
-    script_tags = soup.findAll(name=SCRIPT_TAG)
-    for tag in script_tags:
-        if tag.has_attr(SRC_ATTR):
-            script_paths.add(tag[SRC_ATTR])
-    return resource_paths.union(link_paths.union(script_paths))
+    resource_paths = set()
+    for tg, atr in TAGS_ATTR.items():
+        resource_paths = resource_paths.union(
+            {tag[atr] for tag in soup.findAll(name=tg) if tag.has_attr(atr)},
+        )
+    return resource_paths
 
 
 def change_tags(
