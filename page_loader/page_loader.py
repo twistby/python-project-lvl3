@@ -121,14 +121,17 @@ def download(page_address: str, saving_directory: str = '') -> str:
 
     resource_dir = form_file_name(page_address, DIR_EXT)
     full_dir_name = os.path.join(saving_directory, resource_dir)
-    if not os.path.exists(full_dir_name):
-        try:
-            os.makedirs(full_dir_name)
-        except OSError as err:
-            logging.debug(err)
-            err_msg = "Can't create directory. {em}".format(em=err)
-            logging.error(err_msg)
-            raise CreateDirError(err_msg) from err
+    try:
+        os.mkdir(full_dir_name)
+    except FileExistsError as err:
+        logging.debug(err)
+        err_msg = 'Directory exist. {em}'.format(em=err)
+        logging.error(err_msg)
+    except OSError as err:
+        logging.debug(err)
+        err_msg = "Can't create directory. {em}".format(em=err)
+        logging.error(err_msg)
+        raise CreateDirError(err_msg) from err
 
     page_code = download_resurces(
         page_code,
