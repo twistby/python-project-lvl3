@@ -164,7 +164,7 @@ def save_resource(
 
 
 def download_resurces(
-    page_code: str,
+    page_html: str,
     page_url: str,
     save_directory: str,
     resource_dir: str,
@@ -172,7 +172,7 @@ def download_resurces(
     """Download web-page resources."""
     parsed_page_url = urlparse(page_url)
     replacements: dict = {}
-    soup = BeautifulSoup(page_code, 'html.parser')
+    soup = BeautifulSoup(page_html, 'html.parser')
     resource_urls = get_resource_urls(soup)
     progress_bar = Bar('Downloading resources', max=len(resource_urls))
     for url in resource_urls:
@@ -203,6 +203,8 @@ def download_resurces(
                 url,
             )
         progress_bar.next()
+
     if replacements:
-        page_code = replace_links(soup, resource_dir, replacements)
-    return page_code
+        page_html = replace_links(soup, resource_dir, replacements)
+
+    return page_html

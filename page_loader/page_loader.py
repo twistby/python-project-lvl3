@@ -19,45 +19,22 @@ DIR_SUFFIX = '_files'
 
 def form_file_name(
     page_url: str,
-    extension: str = '',
+    addition: str = '',
 ) -> str:
-    """Form file name from link."""
+    """Form file name from URL."""
     parsed_page = urlparse(page_url)
     file_name = ''
     if parsed_page.hostname:
         link = '{h}{p}'.format(h=parsed_page.hostname, p=parsed_page.path)
         file_name = '{n}{e}'.format(
             n=re.sub(LINK_RE_PATTERN, '-', link),
-            e=extension,
+            e=addition,
         )
     return file_name
 
 
-def save_page(
-    page_url: str,
-    page_code: str,
-    save_directory: str,
-) -> str:
-    """Save web page."""
-    page_name = form_file_name(page_url, HTML_EXT)
-
-    full_path = os.path.join(save_directory, page_name)
-    try:
-        page_file = open(full_path, 'w')
-    except OSError as err:
-        logging.debug(err)
-        err_msg = "Can't save page. {em}".format(em=err)
-        logging.error(err_msg)
-        raise app_errors.SavePageError(err_msg) from err
-    else:
-        with page_file:
-            page_file.write(page_code)
-
-    return full_path
-
-
 def get_page_html(page_url: str) -> str:
-    """Try get page text."""
+    """Try get page html."""
     try:
         response = requests.get(url=page_url, headers=DEFAULT_HEADER)
         response.raise_for_status()
@@ -68,17 +45,6 @@ def get_page_html(page_url: str) -> str:
         raise app_errors.AppConnectionError(err_msg) from err
 
     return response.text
-
-
-def set_saving_dir(saving_directory: str) -> str:
-    """Check saving directory and set default if necessary."""
-    if not saving_directory:
-        saving_directory = os.getcwd()
-    if not os.path.exists(saving_directory):
-        err_msg = 'Saving directory not exist: {d}'.format(d=saving_directory)
-        logging.error(err_msg)
-        raise app_errors.DirNotExistError(err_msg)
-    return saving_directory
 
 
 def check_url_schema(page_url: str) -> str:
