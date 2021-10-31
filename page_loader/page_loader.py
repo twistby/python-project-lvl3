@@ -55,11 +55,12 @@ def add_url_schema(page_url: str) -> str:
     return page_url
 
 
-def open_page_file(
+def save_page(
     saving_directory: str,
     page_file_name: str,
+    page_html: str,
 ) -> Tuple[TextIO, str]:
-    """Open file to save page."""
+    """Save page to file."""
     page_path = os.path.join(saving_directory, page_file_name)
     try:
         page_file = open(page_path, 'w')
@@ -68,7 +69,17 @@ def open_page_file(
         err_msg = "Can't save page. {em}".format(em=err)
         logging.error(err_msg)
         raise app_errors.SavePageError(err_msg) from err
-    return page_file, page_path
+
+    with page_file:
+        try:
+            page_file.write(page_html)
+        except OSError as err:
+            logging.debug(err)
+            err_msg = "Can't save page. {em}".format(em=err)
+            logging.error(err_msg)
+            raise app_errors.SavePageError(err_msg) from err
+
+    return page_path
 
 
 def download(page_url: str, saving_directory: str = '') -> str:
@@ -101,14 +112,4 @@ def download(page_url: str, saving_directory: str = '') -> str:
     )
 
     page_file_name = form_file_name(page_url, HTML_EXT)
-    page_file, page_path = open_page_file(saving_directory, page_file_name)
-    with page_file:
-        try:
-            page_file.write(page_html)
-        except OSError as err:
-            logging.debug(err)
-            err_msg = "Can't save page. {em}".format(em=err)
-            logging.error(err_msg)
-            raise app_errors.SavePageError(err_msg) from err
-
-    return page_path
+    return save_page(saving_directory, page_file_name, page_html)
