@@ -47,7 +47,7 @@ def get_page_html(page_url: str) -> str:
     return response.text
 
 
-def check_url_schema(page_url: str) -> str:
+def add_url_schema(page_url: str) -> str:
     """Add schema if need."""
     if not urlparse(page_url).scheme:
         logging.warning('Looks like URL without scheme, "http://" added')
@@ -57,13 +57,10 @@ def check_url_schema(page_url: str) -> str:
 
 def open_page_file(
     saving_directory: str,
-    page_url: str,
+    page_file_name: str,
 ) -> Tuple[TextIO, str]:
     """Open file to save page."""
-    page_path = os.path.join(
-        saving_directory,
-        form_file_name(page_url, HTML_EXT),
-    )
+    page_path = os.path.join(saving_directory, page_file_name)
     try:
         page_file = open(page_path, 'w')
     except OSError as err:
@@ -79,10 +76,8 @@ def download(page_url: str, saving_directory: str = '') -> str:
     if not saving_directory:
         saving_directory = os.getcwd()
 
-    page_url = check_url_schema(page_url)
+    page_url = add_url_schema(page_url)
     page_html = get_page_html(page_url)
-
-    page_file, page_path = open_page_file(saving_directory, page_url)
 
     resource_dir_name = form_file_name(page_url, DIR_SUFFIX)
     resource_dir_path = os.path.join(saving_directory, resource_dir_name)
@@ -105,6 +100,8 @@ def download(page_url: str, saving_directory: str = '') -> str:
         resource_dir_name,
     )
 
+    page_file_name = form_file_name(page_url, HTML_EXT)
+    page_file, page_path = open_page_file(saving_directory, page_file_name)
     with page_file:
         try:
             page_file.write(page_html)

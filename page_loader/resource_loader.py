@@ -102,7 +102,7 @@ def is_local_res(
     return is_local and not is_encoded
 
 
-def get_response(resource_link: str) -> Optional[Response]:
+def get_resource_response(resource_link: str) -> Optional[Response]:
     """Get response from the resource link."""
     try:
         response = requests.get(
@@ -143,24 +143,23 @@ def get_resource_file(
 
 def save_resource(
     resource_file: BinaryIO,
-    response: Response,
-    replacements: dict,
-    resource_name: str,
-    path: str,
-) -> None:
+    resource_response: Response,
+    resource_file_name: str,
+) -> bool:
     """Try save resource to file."""
     with resource_file:
-        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+        for chunk in resource_response.iter_content(chunk_size=CHUNK_SIZE):
             try:
                 resource_file.write(chunk)
             except OSError as err:
                 logging.debug(err)
                 err_msg = "Can't save resource {rm}. {em}".format(
-                    rm=resource_name,
+                    rm=resource_file_name,
                     em=err,
                 )
                 logging.error(err_msg)
-        replacements[path] = resource_name
+                return False
+    return True
 
 
 def download_resurces(
@@ -184,24 +183,24 @@ def download_resurces(
 
         resource_link = urljoin(page_url, url)
 
-        response = get_response(resource_link)
+        resource_response = get_resource_response(resource_link)
 
-        resource_name = form_resource_name(resource_link)
+        resource_file_name = form_resource_name(resource_link)
 
         resource_file = get_resource_file(
             save_directory,
             resource_dir,
-            resource_name,
+            resource_file_name,
         )
 
-        if response and resource_file:
-            save_resource(
+        if resource_response and resource_file:
+            if save_resource(
                 resource_file,
-                response,
-                replacements,
-                resource_name,
-                url,
-            )
+                resource_response,
+                resource_file_name,
+            ):
+                replacements[url] = resource_file_name
+
         progress_bar.next()
 
     if replacements:
