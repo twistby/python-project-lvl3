@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-from typing import TextIO, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -59,7 +58,7 @@ def save_page(
     saving_directory: str,
     page_file_name: str,
     page_html: str,
-) -> Tuple[TextIO, str]:
+) -> str:
     """Save page to file."""
     page_path = os.path.join(saving_directory, page_file_name)
     try:
